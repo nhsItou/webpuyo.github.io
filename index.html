@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ぷにょぷにょ</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+  <div class="container">
+    <div>
+      <canvas id="board" width="240" height="480"></canvas>
+    </div>
+    <div class="panel">
+      <h1>ぷにょぷにょ</h1>
+      <div class="info">
+        <div>操作: 移動←→,回転Q/E, 早落ち↓, ドロップSpace</div>
+        <div style="margin-top:8px">スコア: <span id="score">0</span></div>
+        <div>チェイン: <span id="chain">0</span></div>
+        <div style="margin-top:8px">次:</div>
+        <canvas id="next" width="80" height="80" style="background:transparent; display:block; margin-top:6px; border-radius:6px"></canvas>
+        <div style="margin-top:8px"><button id="restart" class="btn">リスタート</button></div>
+      </div>
+    </div>
+  </div>
+
+<script src="index.js"></script>
+</body>
+</html>
