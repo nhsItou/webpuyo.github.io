@@ -1,8 +1,10 @@
 (() => {
+  //定数
   const COLS = 6;
   const ROWS = 12; 
   const CELL = 40;
 
+  //色指定
   const COLORS = ['red','yellow','green','blue','magenta'];
   const COLOR_FALLBACK = {
     red: '#e74c3c',
@@ -18,6 +20,7 @@
   const chainEl = document.getElementById('chain');
   const restartBtn = document.getElementById('restart');
 
+  //画像読み込み
   const puyoImg = {};
   for(const name of COLORS){
     const img = new Image();
@@ -25,11 +28,18 @@
     puyoImg[name] = img;
   }
 
-  let grid, cur, nextPair, tickTimer, dropInterval = 700, lastDrop = 0;
-  let score = 0, chainCount = 0, running = true;
-  let clearingCells = [];
+  //変数宣言
+  let grid,                 //盤面情報
+      cur,                  //現在操作中のペア
+      nextPair,             //次のペア
+      dropInterval = 700,   //自動落下間隔（ミリ秒）
+      lastDrop = 0;         //最後に自動落下した時刻
+  let score = 0,            //スコア
+      chainCount = 0,       //連鎖数
+      running = true;       //ゲーム進行中フラグ
+  let clearingCells = [];   //消去中のセル情報
 
-  function makeGrid(){
+  function makeGrid(){      //盤面の初期化・生成
     const g = [];
     for(let r=0;r<ROWS+2;r++){
       g.push(new Array(COLS).fill(null));
@@ -37,26 +47,26 @@
     return g;
   }
 
-  function randColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
-  function newPair(){ return [{x:2,y:0,color:randColor()},{x:2,y:1,color:randColor()}]; }
+  function randColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; } //ランダムに色を生成
+  function newPair(){ return [{x:2,y:0,color:randColor()},{x:2,y:1,color:randColor()}]; } //新しいペアを生成
 
-  function spawn(){
-    cur = nextPair || newPair();
-    nextPair = newPair();
+  function spawn(){ //新しいペアを出現させる
+    cur = nextPair || newPair();  //ネクストがあるなら、それを操作用にし、なければ新規生成
+    nextPair = newPair();          //ネクストを新規生成
     cur[0].x = 2; cur[0].y = 0;
     cur[1].x = 2; cur[1].y = 1;
-    if(collision(cur)){
+    if(collision(cur)){   //新しいペア画衝突していたらゲームオーバー
       running = false;
       alert('ゲームオーバー\nスコア: ' + score);
     }
   }
 
-  function placePairToGrid(){
+  function placePairToGrid(){   //現在のペアを盤面に固定する
     for(const p of cur){ if(p.y>=0) grid[p.y][p.x] = p.color; }
     cur = null;
   }
 
-  function collision(pair){
+  function collision(pair){ //衝突判定
     for(const p of pair){
       if(p.x<0 || p.x>=COLS || p.y>=ROWS+2) return true;
       if(p.y>=0 && grid[p.y][p.x]) return true;
@@ -64,7 +74,7 @@
     return false;
   }
 
-  function rotateCW(){
+  function rotateCW(){  //時計回り回転
     if(!cur) return;
     const px = cur[0].x, py = cur[0].y;
     const cx = cur[1].x, cy = cur[1].y;
@@ -86,7 +96,7 @@
     }
   }
 
-  function rotateCCW(){
+  function rotateCCW(){ //反時計回り回転
   if(!cur) return;
 
   const px = cur[0].x, py = cur[0].y;
@@ -119,13 +129,13 @@
 }
 
 
-  function move(dx){
+  function move(dx){  //左右移動
     if(!cur) return;
     for(const p of cur) p.x += dx;
     if(collision(cur)) for(const p of cur) p.x -= dx;
   }
 
-  function softDrop(){
+  function softDrop(){  //ソフトドロップ
     if(!cur) return;
     for(const p of cur) p.y += 1;
     if(collision(cur)){
@@ -136,7 +146,7 @@
     }
   }
 
-  function hardDrop(){
+  function hardDrop(){  //ハードドロップ
     if(!cur) return;
     while(true){ for(const p of cur) p.y += 1; if(collision(cur)){ for(const p of cur) p.y -= 1; break; } }
     placePairToGrid();
@@ -144,7 +154,7 @@
     processClearsSequentially().then(()=> spawn());
   }
 
-  function processClearsSequentially(){
+  function processClearsSequentially(){ //連鎖処理
     return new Promise((resolve) => {
       let localChain = 0;
 
@@ -200,7 +210,7 @@
     });
   }
 
-  function findGroups(){
+  function findGroups(){  //連結グループ検出
     const seen = Array.from({length:ROWS+2},()=>new Array(COLS).fill(false));
     const groups = [];
     for(let y=0;y<ROWS+2;y++){
@@ -228,7 +238,7 @@
     return groups;
   }
 
-  function applyGravity(){
+  function applyGravity(){  //重力適用
     for(let x=0;x<COLS;x++){
       let write = ROWS+1;
       for(let y=ROWS+1;y>=0;y--){
@@ -238,7 +248,7 @@
     }
   }
 
-  function draw(){
+  function draw(){  //描画
     ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
     for(let r=2;r<ROWS+2;r++){ 
       for(let c=0;c<COLS;c++){
@@ -270,9 +280,10 @@
       }
       ctx.restore();
     }
+    drawNext();
   }
 
-  function drawPuyo(gridX, gridY, color, isGhost=false){
+  function drawPuyo(gridX, gridY, color, isGhost=false){  //ぷよ描画
     const img = puyoImg[color];
     const x = gridX * CELL;
     const y = gridY * CELL;
@@ -288,7 +299,7 @@
     }
   }
 
-  function drawNext(){
+  function drawNext(){  //次のペア描画
     nextCtx.clearRect(0,0,nextCtx.canvas.width,nextCtx.canvas.height);
     const p = nextPair || newPair();
     const canvasW = nextCtx.canvas.width;
@@ -319,7 +330,7 @@
     }
   }
 
-  function loop(ts){
+  function loop(ts){  //メインループ
     if(!lastDrop) lastDrop = ts;
     if(!running) return;
     if(ts - lastDrop > dropInterval){
@@ -334,7 +345,7 @@
         }
       }
     }
-    draw(); drawNext();
+    draw();
     requestAnimationFrame(loop);
   }
 
@@ -342,8 +353,8 @@
     if(!running) return;
     if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { move(-1); }
     else if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { move(1); }
-    else if(e.key === 'e' || e.key === 'E') { rotateCCW(); }
-    else if(e.key === 'q' || e.key === 'Q') { rotateCW(); }
+    else if(e.key === 'e' || e.key === 'E' || e.key === 'o' || e.key === 'O') { rotateCCW(); }
+    else if(e.key === 'q' || e.key === 'Q' || e.key === 'u' || e.key === 'U') { rotateCW(); }
     else if(e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { softDrop(); }
     else if(e.key === 'ArrowUp' || e.key === 'W'||e.key === 'w'||e.code === 'Space'){ hardDrop(); }
     else if(e.key === 'r' || e.key === 'R'){ init(); }
