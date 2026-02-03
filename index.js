@@ -1,7 +1,5 @@
 (() => {
   //定数
-  const COLS = 6;
-  const ROWS = 12; 
   const CELL = 40;
 
   //色指定
@@ -39,13 +37,18 @@
       running = true;       //ゲーム進行中フラグ
   let clearingCells = [];   //消去中のセル情報
 
-  function makeGrid(){      //盤面の初期化・生成
-    const g = [];
-    for(let r=0;r<ROWS+2;r++){
-      g.push(new Array(COLS).fill(null));
-    }
-    return g;
+  const config = {
+  cols: 6,
+  rows: 12
+};
+
+function makeGrid(cols, rows){
+  const g = [];
+  for(let r = 0; r < rows + 2; r++){
+    g.push(new Array(cols).fill(null));
   }
+  return g;
+}
 
   function randColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; } //ランダムに色を生成
   function newPair(){ return [{x:2,y:0,color:randColor()},{x:2,y:1,color:randColor()}]; } //新しいペアを生成
@@ -53,8 +56,9 @@
   function spawn(){ //新しいペアを出現させる
     cur = nextPair || newPair();  //ネクストがあるなら、それを操作用にし、なければ新規生成
     nextPair = newPair();          //ネクストを新規生成
-    cur[0].x = 2; cur[0].y = 0;
-    cur[1].x = 2; cur[1].y = 1;
+    const ox = Math.floor(config.cols / 2);
+    cur[0].x = ox; cur[0].y = 0;
+    cur[1].x = ox; cur[1].y = 1;
     if(collision(cur)){   //新しいペア画衝突していたらゲームオーバー
       running = false;
       alert('ゲームオーバー\nスコア: ' + score);
@@ -68,7 +72,7 @@
 
   function collision(pair){ //衝突判定
     for(const p of pair){
-      if(p.x<0 || p.x>=COLS || p.y>=ROWS+2) return true;
+      if(p.x<0 || p.x>=config.cols || p.y>=config.rows+2) return true;
       if(p.y>=0 && grid[p.y][p.x]) return true;
     }
     return false;
@@ -211,10 +215,10 @@
   }
 
   function findGroups(){  //連結グループ検出
-    const seen = Array.from({length:ROWS+2},()=>new Array(COLS).fill(false));
+    const seen = Array.from({length:config.rows+2},()=>new Array(config.cols).fill(false));
     const groups = [];
-    for(let y=0;y<ROWS+2;y++){
-      for(let x=0;x<COLS;x++){
+    for(let y=0;y<config.rows+2;y++){
+      for(let x=0;x<config.cols;x++){
         if(grid[y][x] && !seen[y][x]){
           const color = grid[y][x];
           const stack = [{x,y}];
@@ -226,7 +230,7 @@
             const deltas = [[1,0],[-1,0],[0,1],[0,-1]];
             for(const d of deltas){
               const nx=p.x+d[0], ny=p.y+d[1];
-              if(nx>=0 && nx<COLS && ny>=0 && ny<ROWS+2 && !seen[ny][nx] && grid[ny][nx]===color){
+              if(nx>=0 && nx<config.cols && ny>=0 && ny<config.rows+2 && !seen[ny][nx] && grid[ny][nx]===color){
                 seen[ny][nx]=true; stack.push({x:nx,y:ny});
               }
             }
@@ -239,9 +243,9 @@
   }
 
   function applyGravity(){  //重力適用
-    for(let x=0;x<COLS;x++){
-      let write = ROWS+1;
-      for(let y=ROWS+1;y>=0;y--){
+    for(let x=0;x<config.cols;x++){
+      let write = config.rows+1;
+      for(let y=config.rows+1;y>=0;y--){
         if(grid[y][x]){ grid[write][x] = grid[y][x]; if(write!==y) grid[y][x]=null; write--; }
       }
       for(let y=write;y>=0;y--) grid[y][x]=null;
@@ -250,16 +254,16 @@
 
   function draw(){  //描画
     ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-    for(let r=2;r<ROWS+2;r++){ 
-      for(let c=0;c<COLS;c++){
+    for(let r=2;r<config.rows+2;r++){ 
+      for(let c=0;c<config.cols;c++){
         ctx.fillStyle = '#071026';
         ctx.fillRect(c*CELL, (r-2)*CELL, CELL, CELL);
         ctx.strokeStyle = 'rgba(255,255,255,0.03)';
         ctx.strokeRect(c*CELL, (r-2)*CELL, CELL, CELL);
       }
     }
-    for(let y=2;y<ROWS+2;y++){
-      for(let x=0;x<COLS;x++){
+    for(let y=2;y<config.rows+2;y++){
+      for(let x=0;x<config.cols;x++){
         const col = grid[y][x];
         if(col){ drawPuyo(x, y-2, col); }
       }
@@ -362,9 +366,38 @@
 
   restartBtn.addEventListener('click', ()=>{ init(); });
 
-  function init(){
-    grid = makeGrid(); score = 0; chainCount = 0; running = true; nextPair = newPair(); spawn(); scoreEl.textContent = score; chainEl.textContent = chainCount; drawNext(); requestAnimationFrame(loop);
-  }
+  document.getElementById('applySize').addEventListener('click', () => {
+  const cols = Number(document.getElementById('colsInput').value);
+  const rows = Number(document.getElementById('rowsInput').value);
+
+  if(cols < 4 || rows < 8) return;
+
+  config.cols = cols;
+  config.rows = rows;
+
+  init(); // サイズ変更＝新規ゲーム
+  });
+
+function init(){
+  grid = makeGrid(config.cols, config.rows);
+
+  const board = document.getElementById('board');
+  board.width  = config.cols * CELL;
+  board.height = config.rows * CELL;
+
+  score = 0;
+  chainCount = 0;
+  running = true;
+  cur = null;
+  nextPair = newPair();
+  spawn();
+
+  scoreEl.textContent = score;
+  chainEl.textContent = chainCount;
+  drawNext();
+  requestAnimationFrame(loop);
+}
+
 
   init();
 })();

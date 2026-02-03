@@ -6,5 +6,8 @@
     .panel{min-width:220px}
     h1{font-size:16px; margin:0 0 8px}
     .info{padding:12px; border-radius:4px}
+    .size{margin-top:10px;}
+    .size input{width:30px;}
+    .size button{margin-left:6px;}
     .btn{display:inline-block;margin-top:8px;padding:6px 10px;border-radius:6px;background:rgb(255, 255, 255); color:rgb(0, 0, 0); cursor:pointer}
     .hint{font-size:12px; color:rgb(255, 255, 255)}
