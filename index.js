@@ -42,10 +42,10 @@
   rows: 12
 };
 
-function makeGrid(cols, rows){
+function makeGrid(cols, rows){ //盤面初期化
   const g = [];
   for(let r = 0; r < rows + 2; r++){
-    g.push(new Array(cols).fill(null));
+    g.push(new Array(cols).fill(null));//null埋め
   }
   return g;
 }
@@ -139,15 +139,13 @@ function makeGrid(cols, rows){
     if(collision(cur)) for(const p of cur) p.x -= dx;
   }
 
-  function softDrop(){  //ソフトドロップ
+  function softDrop(flg){  //ソフトドロップ
     if(!cur) return;
-    for(const p of cur) p.y += 1;
-    if(collision(cur)){
-      for(const p of cur) p.y -= 1;
-      placePairToGrid();
-      applyGravity();
-      processClearsSequentially().then(()=> spawn());
+    if(flg){
+      dropInterval = 50;
+      return;
     }
+    else { dropInterval = 700;  }
   }
 
   function hardDrop(){  //ハードドロップ
@@ -346,6 +344,7 @@ function makeGrid(cols, rows){
           placePairToGrid();
           applyGravity();
           processClearsSequentially().then(()=> spawn());
+          softDrop(false);
         }
       }
     }
@@ -359,43 +358,50 @@ function makeGrid(cols, rows){
     else if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { move(1); }
     else if(e.key === 'e' || e.key === 'E' || e.key === 'o' || e.key === 'O') { rotateCCW(); }
     else if(e.key === 'q' || e.key === 'Q' || e.key === 'u' || e.key === 'U') { rotateCW(); }
-    else if(e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { softDrop(); }
+    else if(e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { softDrop(true); }
     else if(e.key === 'ArrowUp' || e.key === 'W'||e.key === 'w'||e.code === 'Space'){ hardDrop(); }
     else if(e.key === 'r' || e.key === 'R'){ init(); }
   });
 
+  window.addEventListener('keyup', e => {
+    if(e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {softDrop(false);}
+  });
+
   restartBtn.addEventListener('click', ()=>{ init(); });
 
-  document.getElementById('applySize').addEventListener('click', () => {
+  document.getElementById('applySize').addEventListener('click', () => {//サイズ変更適用
   const cols = Number(document.getElementById('colsInput').value);
   const rows = Number(document.getElementById('rowsInput').value);
 
-  if(cols < 4 || rows < 8) return;
+  if((cols < 4 || cols > 20) || rows < 8 || rows > 40) return;
 
   config.cols = cols;
   config.rows = rows;
 
-  init(); // サイズ変更＝新規ゲーム
+  init(); // サイズ変更時初期化
   });
 
 function init(){
-  grid = makeGrid(config.cols, config.rows);
+  grid = makeGrid(config.cols, config.rows);//盤面初期化
 
-  const board = document.getElementById('board');
+  //盤面サイズ設定
+  const board = document.getElementById('board'); 
   board.width  = config.cols * CELL;
   board.height = config.rows * CELL;
 
+  //変数初期化
   score = 0;
   chainCount = 0;
   running = true;
   cur = null;
-  nextPair = newPair();
-  spawn();
+  nextPair = newPair(); //初期ネクスト生成
+  spawn();              //最初のペア生成
 
-  scoreEl.textContent = score;
-  chainEl.textContent = chainCount;
-  drawNext();
-  requestAnimationFrame(loop);
+  scoreEl.textContent = score;      //スコア表示初期化
+  chainEl.textContent = chainCount; //連鎖数表示初期化
+
+  drawNext(); //ネクスト表示
+  requestAnimationFrame(loop);//メインループ開始
 }
 
 
